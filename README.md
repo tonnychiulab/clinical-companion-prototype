@@ -1,15 +1,27 @@
 # 診前同行｜Clinical Companion
 
+![Version](https://img.shields.io/badge/version-v0.2.0-365f52)
+![Status](https://img.shields.io/badge/status-prototype-8a5d23)
+
 一個以「減少醫師輸入」為核心的家庭醫療介面原型。病人、家屬或家庭照護者可以先用熟悉的語言描述狀況，醫師接手時查看整理後的病人故事、缺漏資訊與待確認事項。
 
 ## 線上示範
 
 [開啟 GitHub Pages 線上示範](https://tonnychiulab.github.io/clinical-companion-prototype/)
 
-> 部署後，請將網址中的 `YOUR_GITHUB_USERNAME` 替換成你的 GitHub 帳號；如果 Repository 名稱不同，也請一併修改網址末段。
-
 > [!WARNING]
 > **本專案僅供介面原型、流程設計與教學展示。** 內容全部為虛構示範資料，不構成醫療建議、診斷、治療、分流或轉診依據，也不可取代合格醫療專業人員的臨床判斷。請勿輸入真實病人姓名、身分證字號、病歷、聯絡方式、影像、檢驗結果或其他可識別個人的健康資料；未經完整的醫療驗證、資安檢測、權限控管與法規評估前，不得用於真實臨床環境。
+
+## 目前版本
+
+**v0.2.0**
+
+- 在介面中顯示版本號
+- 個人識別資訊與健康資料預設遮蔽
+- 提供「顯示個資／遮蔽個資」切換
+- 載入新示範或完成診前填寫時，自動恢復遮蔽
+- 遮蔽狀態下禁止直接確認臨床摘要
+- 匯出內容會遵循目前的遮蔽狀態
 
 ## 功能
 
@@ -25,6 +37,19 @@
 - 匯出純文字交接摘要
 - 桌機、平板及手機自適應版面
 - 不依賴框架、外部套件或 CDN
+
+## 個資遮蔽設計
+
+頁面預設啟用遮蔽模式，涵蓋：
+
+- 病人姓名、年齡與性別
+- 資料提供者與接診情境
+- 生命徵象
+- 病史、用藥與過敏
+- 主訴、時間軸、雙語紀錄與原始問答
+- 優先確認、缺漏資訊與診前摘要
+
+遮蔽功能主要降低螢幕側錄、肩窺及公開展示時意外曝光的風險，**不等同加密、權限控管或正式的醫療資訊安全措施**。
 
 ## 檔案結構
 
@@ -43,7 +68,7 @@ clinical-companion-prototype/
 
 直接開啟 `index.html` 即可使用大部分功能。
 
-語音辨識通常需要在 HTTPS 或 localhost 環境執行。可在專案目錄使用：
+語音辨識通常需要在 HTTPS 或 localhost 環境執行：
 
 ```bash
 python -m http.server 8000
@@ -57,24 +82,11 @@ http://localhost:8000
 
 ## 部署到 GitHub Pages
 
-1. 在 GitHub 建立新的 Repository。
-2. 將本專案所有檔案上傳到 Repository 根目錄。
-3. 進入 Repository 的 **Settings**。
-4. 選擇 **Pages**。
-5. 在 **Build and deployment** 中選擇 **Deploy from a branch**。
-6. Branch 選擇 `main`，資料夾選擇 `/ (root)`。
-7. 按下 **Save**。
-8. 等待 GitHub Pages 顯示公開網址。
-
-由於所有路徑均為相對路徑，因此可直接部署在專案型 Pages 網址下。
-
-部署完成後，網址格式通常為：
-
-```text
-https://YOUR_GITHUB_USERNAME.github.io/clinical-companion-prototype/
-```
-
-記得同步更新本 README 上方的「線上示範」連結。
+1. 將專案檔案放在 Repository 根目錄。
+2. 進入 Repository 的 **Settings → Pages**。
+3. 在 **Build and deployment** 選擇 **Deploy from a branch**。
+4. Branch 選擇 `main`，資料夾選擇 `/ (root)`。
+5. 按下 **Save**，等待 Pages 更新。
 
 ## 一鍵示範
 
@@ -85,6 +97,7 @@ https://YOUR_GITHUB_USERNAME.github.io/clinical-companion-prototype/
 - 起身頭暈、食慾下降、險些跌倒
 - 原始英文與中文整理並列
 - 顯示生命徵象、缺漏資訊與優先確認事項
+- 載入後預設遮蔽所有個資與健康資料
 
 右上角「更多功能」另有一般候診、偏鄉協作及教學模擬案例。
 
@@ -97,6 +110,7 @@ https://YOUR_GITHUB_USERNAME.github.io/clinical-companion-prototype/
 - 關閉分頁後由瀏覽器清除暫存狀態
 - 不可輸入真實病人資料
 - 翻譯內容為示範資料，不是正式醫療翻譯
+- 前端遮蔽只屬於介面層保護，不代表資料已被加密
 
 ## 後續整合方向
 
@@ -107,6 +121,6 @@ https://YOUR_GITHUB_USERNAME.github.io/clinical-companion-prototype/
 - 專業醫療翻譯服務
 - FHIR Questionnaire / QuestionnaireResponse
 - HIS / EMR
-- 身分驗證、權限控管與完整稽核紀錄
+- 身分驗證、權限控管、加密與完整稽核紀錄
 
 醫師工作台不應顯示模型供應商、模型版本、Token 或 API 設定。

@@ -1,10 +1,12 @@
 "use strict";
 
+const APP_VERSION = "v0.2.0";
+
 const translations = {
   "zh-TW": {
     skipToContent: "跳到主要內容", brandEyebrow: "家庭醫療協作", brandName: "診前同行",
-    systemReady: "系統可用", notOrganized: "尚未整理", uiLanguage: "介面語言",
-    loadDemo: "載入示範", demoStandard: "一般候診示範", demoRural: "偏鄉協作示範",
+    systemReady: "原型示範", notOrganized: "尚未整理", uiLanguage: "介面語言",
+    loadDemo: "載入示範", showPersonalData: "顯示個資", hidePersonalData: "遮蔽個資", personalDataMasked: "個資已遮蔽", personalDataVisible: "個資已顯示", maskedContent: "內容已遮蔽", maskedPersonalField: "資料已遮蔽", revealToInteract: "請先顯示個資再確認內容", demoOnlyTitle: "僅供示範", prototypeInputWarning: "請勿輸入真實姓名、病歷、聯絡資料或其他可識別個人的醫療資訊。", versionLabel: "版本", demoStandard: "一般候診示範", demoRural: "偏鄉協作示範",
     demoEducation: "教學模擬示範", resetDemo: "重置示範", mode: "模式",
     clinicalMode: "臨床接診", ruralMode: "偏鄉協作", educationMode: "教學模擬",
     quickStart: "快速開始", loadCaregiverDemo: "載入跨語言照護示範", openIntake: "開啟診前填寫",
@@ -79,8 +81,8 @@ const translations = {
   },
   en: {
     skipToContent: "Skip to main content", brandEyebrow: "Family medicine collaboration", brandName: "Clinical Companion",
-    systemReady: "System available", notOrganized: "Not organized yet", uiLanguage: "Interface language",
-    loadDemo: "Load demo", demoStandard: "General clinic demo", demoRural: "Rural care demo", demoEducation: "Teaching simulation demo",
+    systemReady: "Prototype demo", notOrganized: "Not organized yet", uiLanguage: "Interface language",
+    loadDemo: "Load demo", showPersonalData: "Show personal data", hidePersonalData: "Hide personal data", personalDataMasked: "Personal data hidden", personalDataVisible: "Personal data visible", maskedContent: "Content hidden", maskedPersonalField: "Data hidden", revealToInteract: "Show personal data before confirming the content", demoOnlyTitle: "Demo only", prototypeInputWarning: "Do not enter real names, medical records, contact details, or other identifiable health information.", versionLabel: "Version", demoStandard: "General clinic demo", demoRural: "Rural care demo", demoEducation: "Teaching simulation demo",
     resetDemo: "Reset demo", mode: "Mode", clinicalMode: "Clinical intake", ruralMode: "Rural collaboration", educationMode: "Teaching simulation",
     quickStart: "Quick start", loadCaregiverDemo: "Load multilingual caregiver demo", openIntake: "Open pre-visit intake",
     principleTitle: "Design principle", principleText: "Doctors do not choose models or re-enter data. They only confirm what requires clinical judgment.",
@@ -161,6 +163,7 @@ const initialState = {
   mode: "clinical",
   view: "welcome",
   reviewStatus: "pending",
+  privacyMasked: true,
   currentMobilePanel: "storyPanel",
   lastOrganized: null,
   patient: null,
@@ -176,6 +179,7 @@ const initialState = {
 };
 
 let state = loadState();
+if (typeof state.privacyMasked !== "boolean") state.privacyMasked = true;
 let speechController = null;
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -184,13 +188,52 @@ const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selec
 const elements = {
   welcomeView: $("#welcomeView"), workspace: $("#workspace"), intakeView: $("#intakeView"),
   sidePanel: $("#sidePanel"), moreMenu: $("#moreMenu"), toast: $("#toast"),
-  languageSelect: $("#languageSelect"), lastOrganizedText: $("#lastOrganizedText"),
+  languageSelect: $("#languageSelect"), privacyToggleButton: $("#privacyToggleButton"), lastOrganizedText: $("#lastOrganizedText"),
   patientPanel: $("#patientPanel"), storyPanel: $("#storyPanel"), reviewPanel: $("#reviewPanel"),
   mobileNav: $(".mobile-nav"), noteDialog: $("#noteDialog")
 };
 
 function t(key) {
   return translations[state.uiLanguage]?.[key] ?? translations["zh-TW"][key] ?? key;
+}
+
+function maskSensitive(value, kind = "content") {
+  if (value === undefined || value === null || value === "" || value === "—") return "—";
+  if (kind === "name") {
+    const text = String(value).trim();
+    if (/^[\u3400-\u9fff]/.test(text)) return "○○○";
+    return "••••";
+  }
+  if (kind === "avatar") return "●";
+  if (kind === "time") return "••:••";
+  if (kind === "vital") return "•••";
+  if (kind === "field") return t("maskedPersonalField");
+  return t("maskedContent");
+}
+
+function privacyText(value, kind = "content") {
+  return state.privacyMasked ? maskSensitive(value, kind) : value;
+}
+
+function setSensitiveText(target, value, kind = "content") {
+  const element = typeof target === "string" ? $(target) : target;
+  if (!element) return;
+  element.textContent = privacyText(value, kind);
+  element.classList.add("is-sensitive");
+  element.classList.toggle("is-masked", state.privacyMasked);
+  if (state.privacyMasked) element.setAttribute("aria-label", t("maskedContent"));
+  else element.removeAttribute("aria-label");
+}
+
+function updatePrivacyControl() {
+  document.body.classList.toggle("privacy-masked", state.privacyMasked);
+  const button = elements.privacyToggleButton;
+  if (!button) return;
+  button.classList.toggle("is-active", state.privacyMasked);
+  button.setAttribute("aria-pressed", String(state.privacyMasked));
+  button.setAttribute("aria-label", state.privacyMasked ? t("showPersonalData") : t("hidePersonalData"));
+  const text = $("#privacyToggleText");
+  if (text) text.textContent = state.privacyMasked ? t("showPersonalData") : t("hidePersonalData");
 }
 
 function saveState() {
@@ -204,7 +247,11 @@ function saveState() {
 function loadState() {
   try {
     const stored = sessionStorage.getItem("clinicalCompanionState");
-    if (stored) return { ...structuredClone(initialState), ...JSON.parse(stored) };
+    if (stored) {
+      const restored = { ...structuredClone(initialState), ...JSON.parse(stored) };
+      restored.privacyMasked = true;
+      return restored;
+    }
   } catch (_) {}
   return structuredClone(initialState);
 }
@@ -220,6 +267,9 @@ function applyTranslations() {
     node.placeholder = t(node.dataset.i18nPlaceholder);
   });
   elements.languageSelect.value = state.uiLanguage;
+  $("#appVersion").textContent = APP_VERSION;
+  $("#appVersion").setAttribute("aria-label", `${t("versionLabel")} ${APP_VERSION}`);
+  updatePrivacyControl();
   $("#menuButton").setAttribute("aria-label", t("menuOpen"));
   $("#moreButton").setAttribute("aria-label", t("moreActions"));
   renderSymptomChoices();
@@ -354,6 +404,7 @@ function loadDemo(type = "caregiver") {
   state.patient = getDemoPatient(type);
   state.mode = type === "rural" ? "rural" : type === "education" ? "education" : "clinical";
   state.reviewStatus = "pending";
+  state.privacyMasked = true;
   state.lastOrganized = Date.now();
   setView("workspace");
   renderAll();
@@ -400,26 +451,26 @@ function renderWorkspace() {
   const patient = state.patient;
   if (!patient) return;
 
-  $("#patientAvatar").textContent = patient.avatar;
-  $("#patientName").textContent = t(patient.nameKey);
-  $("#patientMeta").textContent = t(patient.metaKey);
-  $("#dataProvider").textContent = t(patient.providerKey);
-  $("#speakerLanguage").textContent = t(patient.languageKey);
-  $("#arrivalContext").textContent = t(patient.contextKey);
-  $("#medicalHistory").textContent = t(patient.historyKey);
-  $("#medications").textContent = t(patient.medsKey);
-  $("#allergies").textContent = t(patient.allergyKey || "noKnownAllergy");
-  $("#vitalsTime").textContent = t(patient.vitalsTimeKey || "minutesAgo");
+  setSensitiveText("#patientAvatar", patient.avatar, "avatar");
+  setSensitiveText("#patientName", t(patient.nameKey), "name");
+  setSensitiveText("#patientMeta", t(patient.metaKey), "field");
+  setSensitiveText("#dataProvider", t(patient.providerKey), "field");
+  setSensitiveText("#speakerLanguage", t(patient.languageKey), "field");
+  setSensitiveText("#arrivalContext", t(patient.contextKey), "field");
+  setSensitiveText("#medicalHistory", t(patient.historyKey));
+  setSensitiveText("#medications", t(patient.medsKey));
+  setSensitiveText("#allergies", t(patient.allergyKey || "noKnownAllergy"));
+  setSensitiveText("#vitalsTime", t(patient.vitalsTimeKey || "minutesAgo"), "time");
   $("#completenessValue").textContent = `${patient.completeness}%`;
   $("#completenessBar").style.width = `${patient.completeness}%`;
   $("#completenessHint").textContent = t("completenessHint");
-  $("#speakerBadge").textContent = t(patient.speakerBadgeKey);
-  $("#chiefComplaint").textContent = t(patient.complaintKey);
-  $("#originalText").textContent = t(patient.originalKey);
-  $("#translatedText").textContent = t(patient.translatedKey);
-  $("#patientConcern").textContent = t(patient.concernKey);
-  $("#patientExpectation").textContent = t(patient.expectationKey);
-  $("#clinicalSummary").textContent = t(patient.summaryKey);
+  setSensitiveText("#speakerBadge", t(patient.speakerBadgeKey), "field");
+  setSensitiveText("#chiefComplaint", t(patient.complaintKey));
+  setSensitiveText("#originalText", t(patient.originalKey));
+  setSensitiveText("#translatedText", t(patient.translatedKey));
+  setSensitiveText("#patientConcern", t(patient.concernKey));
+  setSensitiveText("#patientExpectation", t(patient.expectationKey));
+  setSensitiveText("#clinicalSummary", t(patient.summaryKey));
 
   const reviewBadge = $("#reviewBadge");
   reviewBadge.textContent = state.reviewStatus === "confirmed" ? t("confirmed") : t("pendingReview");
@@ -434,6 +485,9 @@ function renderWorkspace() {
   renderFollowUps(patient.followUps);
   renderTranscript(patient.transcript);
   renderModeLabels();
+  $("#confirmSummaryButton").disabled = state.privacyMasked;
+  $("#confirmSummaryButton").title = state.privacyMasked ? t("revealToInteract") : "";
+  updatePrivacyControl();
   setMobilePanel(state.currentMobilePanel || "storyPanel");
 }
 
@@ -446,7 +500,7 @@ function renderVitals(vitals) {
     const label = document.createElement("span");
     label.textContent = t(vital.labelKey);
     const value = document.createElement("strong");
-    value.textContent = vital.valueKey ? t(vital.valueKey) : vital.value;
+    setSensitiveText(value, vital.valueKey ? t(vital.valueKey) : vital.value, "vital");
     card.append(label, value);
     container.append(card);
   });
@@ -458,9 +512,9 @@ function renderTimeline(items) {
   items.forEach((item) => {
     const li = document.createElement("li");
     const time = document.createElement("time");
-    time.textContent = item.timeKey ? t(item.timeKey) : item.time;
+    setSensitiveText(time, item.timeKey ? t(item.timeKey) : item.time, "time");
     const text = document.createElement("span");
-    text.textContent = t(item.textKey);
+    setSensitiveText(text, t(item.textKey));
     li.append(time, text);
     list.append(li);
   });
@@ -470,7 +524,7 @@ function renderList(container, keys) {
   container.innerHTML = "";
   keys.forEach((key) => {
     const li = document.createElement("li");
-    li.textContent = t(key);
+    setSensitiveText(li, t(key));
     container.append(li);
   });
 }
@@ -482,10 +536,12 @@ function renderFollowUps(keys) {
     const item = document.createElement("div");
     item.className = "follow-up-item";
     const p = document.createElement("p");
-    p.textContent = t(key);
+    setSensitiveText(p, t(key));
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = t("addQuestion");
+    button.disabled = state.privacyMasked;
+    button.title = state.privacyMasked ? t("revealToInteract") : "";
     button.addEventListener("click", () => {
       $("#doctorInput").value = t(key);
       $("#doctorInput").focus();
@@ -514,11 +570,11 @@ function renderTranscript(items) {
     const meta = document.createElement("div");
     meta.className = "transcript-meta";
     const speaker = document.createElement("strong");
-    speaker.textContent = item.speakerText || t(item.speakerKey);
+    setSensitiveText(speaker, item.speakerText || t(item.speakerKey), "field");
     const time = document.createElement("span");
-    time.textContent = item.time || "";
+    setSensitiveText(time, item.time || "", "time");
     const p = document.createElement("p");
-    p.textContent = item.text || t(item.textKey);
+    setSensitiveText(p, item.text || t(item.textKey));
     meta.append(speaker, time);
     card.append(meta, p);
     container.append(card);
@@ -665,6 +721,7 @@ function completeIntake() {
     dynamicSummary: `${complaint} ${t("formGenerated")}.`
   };
   state.reviewStatus = "pending";
+  state.privacyMasked = true;
   state.lastOrganized = Date.now();
   state.view = "workspace";
   patchDynamicTranslations();
@@ -689,6 +746,7 @@ function addDoctorNote(text) {
 }
 
 function confirmSummary() {
+  if (state.privacyMasked) return showToast(t("revealToInteract"));
   state.reviewStatus = "confirmed";
   renderWorkspace();
   saveState();
@@ -713,20 +771,21 @@ async function copySummary() {
 function exportHandoff() {
   if (!state.patient) return;
   const content = [
+    `Clinical Companion ${APP_VERSION}`,
     `${t("preVisitSummary")}`,
     "",
-    `${t("patientOverview")}: ${t(state.patient.nameKey)} / ${t(state.patient.metaKey)}`,
-    `${t("dataProvider")}: ${t(state.patient.providerKey)}`,
+    `${t("patientOverview")}: ${privacyText(t(state.patient.nameKey), "name")} / ${privacyText(t(state.patient.metaKey), "field")}`,
+    `${t("dataProvider")}: ${privacyText(t(state.patient.providerKey), "field")}`,
     `${t("chiefComplaint")}: ${$("#chiefComplaint").textContent}`,
     "",
     `${t("preVisitSummary")}:`,
     $("#clinicalSummary").textContent,
     "",
     `${t("priorityChecks")}:`,
-    ...state.patient.priority.map((key) => `- ${t(key)}`),
+    ...state.patient.priority.map((key) => `- ${privacyText(t(key))}`),
     "",
     `${t("missingInformation")}:`,
-    ...state.patient.missing.map((key) => `- ${t(key)}`)
+    ...state.patient.missing.map((key) => `- ${privacyText(t(key))}`)
   ].join("\n");
   const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -802,6 +861,12 @@ function bindEvents() {
   $("#openIntakeButton").addEventListener("click", openIntake);
   $("#welcomeIntakeButton").addEventListener("click", openIntake);
   $("#closeIntakeButton").addEventListener("click", () => setView(state.patient ? "workspace" : "welcome"));
+
+  elements.privacyToggleButton.addEventListener("click", () => {
+    state.privacyMasked = !state.privacyMasked;
+    renderAll();
+    showToast(t(state.privacyMasked ? "personalDataMasked" : "personalDataVisible"));
+  });
 
   elements.languageSelect.addEventListener("change", (event) => {
     state.uiLanguage = event.target.value;
