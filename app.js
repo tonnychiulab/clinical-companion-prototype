@@ -1,12 +1,12 @@
 "use strict";
 
-const APP_VERSION = "v0.2.1";
+const APP_VERSION = "v0.2.2";
 
 const translations = {
   "zh-TW": {
     skipToContent: "跳到主要內容", brandEyebrow: "家庭醫療協作", brandName: "診前同行",
     systemReady: "原型示範", notOrganized: "尚未整理", uiLanguage: "介面語言",
-    loadDemo: "載入示範", showPersonalData: "顯示個資", hidePersonalData: "遮蔽個資", personalDataMasked: "個資已遮蔽", personalDataVisible: "個資已顯示", maskedContent: "內容已遮蔽", maskedPersonalField: "資料已遮蔽", revealToInteract: "請先顯示個資再確認內容", demoOnlyTitle: "僅供示範", prototypeInputWarning: "請勿輸入真實姓名、病歷、聯絡資料或其他可識別個人的醫療資訊。", versionLabel: "版本", demoStandard: "一般候診示範", demoRural: "偏鄉協作示範",
+    loadDemo: "載入示範", showPersonalData: "顯示個資", hidePersonalData: "遮蔽個資", personalDataMasked: "個資已遮蔽", personalDataVisible: "個資已顯示", maskedContent: "內容已遮蔽", maskedPersonalField: "資料已遮蔽", revealToInteract: "請先顯示個資再確認內容", demoOnlyTitle: "僅供示範", prototypeInputWarning: "請勿輸入真實姓名、病歷、聯絡資料或其他可識別個人的醫療資訊。", versionLabel: "版本", collapseSidebar: "收合主選單", expandSidebar: "展開主選單", demoStandard: "一般候診示範", demoRural: "偏鄉協作示範",
     demoEducation: "教學模擬示範", resetDemo: "重置示範", mode: "模式",
     clinicalMode: "臨床接診", ruralMode: "偏鄉協作", educationMode: "教學模擬",
     quickStart: "快速開始", loadCaregiverDemo: "載入跨語言照護示範", openIntake: "開啟診前填寫",
@@ -82,7 +82,7 @@ const translations = {
   en: {
     skipToContent: "Skip to main content", brandEyebrow: "Family medicine collaboration", brandName: "Clinical Companion",
     systemReady: "Prototype demo", notOrganized: "Not organized yet", uiLanguage: "Interface language",
-    loadDemo: "Load demo", showPersonalData: "Show personal data", hidePersonalData: "Hide personal data", personalDataMasked: "Personal data hidden", personalDataVisible: "Personal data visible", maskedContent: "Content hidden", maskedPersonalField: "Data hidden", revealToInteract: "Show personal data before confirming the content", demoOnlyTitle: "Demo only", prototypeInputWarning: "Do not enter real names, medical records, contact details, or other identifiable health information.", versionLabel: "Version", demoStandard: "General clinic demo", demoRural: "Rural care demo", demoEducation: "Teaching simulation demo",
+    loadDemo: "Load demo", showPersonalData: "Show personal data", hidePersonalData: "Hide personal data", personalDataMasked: "Personal data hidden", personalDataVisible: "Personal data visible", maskedContent: "Content hidden", maskedPersonalField: "Data hidden", revealToInteract: "Show personal data before confirming the content", demoOnlyTitle: "Demo only", prototypeInputWarning: "Do not enter real names, medical records, contact details, or other identifiable health information.", versionLabel: "Version", collapseSidebar: "Collapse main menu", expandSidebar: "Expand main menu", demoStandard: "General clinic demo", demoRural: "Rural care demo", demoEducation: "Teaching simulation demo",
     resetDemo: "Reset demo", mode: "Mode", clinicalMode: "Clinical intake", ruralMode: "Rural collaboration", educationMode: "Teaching simulation",
     quickStart: "Quick start", loadCaregiverDemo: "Load multilingual caregiver demo", openIntake: "Open pre-visit intake",
     principleTitle: "Design principle", principleText: "Doctors do not choose models or re-enter data. They only confirm what requires clinical judgment.",
@@ -164,6 +164,7 @@ const initialState = {
   view: "welcome",
   reviewStatus: "pending",
   privacyMasked: true,
+  sidebarCollapsed: false,
   currentMobilePanel: "storyPanel",
   lastOrganized: null,
   patient: null,
@@ -180,6 +181,7 @@ const initialState = {
 
 let state = loadState();
 if (typeof state.privacyMasked !== "boolean") state.privacyMasked = true;
+if (typeof state.sidebarCollapsed !== "boolean") state.sidebarCollapsed = false;
 let speechController = null;
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -188,7 +190,7 @@ const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selec
 const elements = {
   welcomeView: $("#welcomeView"), workspace: $("#workspace"), intakeView: $("#intakeView"),
   sidePanel: $("#sidePanel"), moreMenu: $("#moreMenu"), toast: $("#toast"),
-  languageSelect: $("#languageSelect"), privacyToggleButton: $("#privacyToggleButton"), lastOrganizedText: $("#lastOrganizedText"),
+  languageSelect: $("#languageSelect"), privacyToggleButton: $("#privacyToggleButton"), collapseSidebarButton: $("#collapseSidebarButton"), lastOrganizedText: $("#lastOrganizedText"),
   patientPanel: $("#patientPanel"), storyPanel: $("#storyPanel"), reviewPanel: $("#reviewPanel"),
   mobileNav: $(".mobile-nav"), noteDialog: $("#noteDialog")
 };
@@ -236,6 +238,24 @@ function updatePrivacyControl() {
   if (text) text.textContent = state.privacyMasked ? t("showPersonalData") : t("hidePersonalData");
 }
 
+function updateSidebarCollapseControl() {
+  const isDesktop = window.innerWidth > 1180;
+  document.body.classList.toggle("sidebar-collapsed", isDesktop && state.sidebarCollapsed);
+  const button = elements.collapseSidebarButton;
+  if (!button) return;
+  const collapsed = isDesktop && state.sidebarCollapsed;
+  const label = collapsed ? t("expandSidebar") : t("collapseSidebar");
+  button.setAttribute("aria-expanded", String(!collapsed));
+  button.setAttribute("aria-label", label);
+  button.title = label;
+  const text = button.querySelector("span");
+  if (text) text.textContent = label;
+  $$(".mode-button").forEach((modeButton) => {
+    const textNode = modeButton.querySelector("span");
+    if (textNode) modeButton.title = collapsed ? textNode.textContent : "";
+  });
+}
+
 function saveState() {
   try {
     sessionStorage.setItem("clinicalCompanionState", JSON.stringify(state));
@@ -269,7 +289,13 @@ function applyTranslations() {
   elements.languageSelect.value = state.uiLanguage;
   $("#appVersion").textContent = APP_VERSION;
   $("#appVersion").setAttribute("aria-label", `${t("versionLabel")} ${APP_VERSION}`);
+  const intakeVersion = $("#intakeVersion");
+  if (intakeVersion) {
+    intakeVersion.textContent = APP_VERSION;
+    intakeVersion.setAttribute("aria-label", `${t("versionLabel")} ${APP_VERSION}`);
+  }
   updatePrivacyControl();
+  updateSidebarCollapseControl();
   $("#menuButton").setAttribute("aria-label", t("menuOpen"));
   $("#moreButton").setAttribute("aria-label", t("moreActions"));
   renderSymptomChoices();
@@ -872,6 +898,12 @@ function bindEvents() {
     showToast(t(state.privacyMasked ? "personalDataMasked" : "personalDataVisible"));
   });
 
+  elements.collapseSidebarButton.addEventListener("click", () => {
+    state.sidebarCollapsed = !state.sidebarCollapsed;
+    updateSidebarCollapseControl();
+    saveState();
+  });
+
   elements.languageSelect.addEventListener("change", (event) => {
     state.uiLanguage = event.target.value;
     patchDynamicTranslations();
@@ -972,6 +1004,7 @@ function bindEvents() {
 
   window.addEventListener("resize", () => {
     if (window.innerWidth > 1180) toggleSidePanel(false);
+    updateSidebarCollapseControl();
     if (window.innerWidth > 820) $$(".workspace-panel").forEach((panel) => panel.classList.remove("is-mobile-active"));
     else setMobilePanel(state.currentMobilePanel || "storyPanel");
   });

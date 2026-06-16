@@ -1,6 +1,6 @@
 # 診前同行｜Clinical Companion
 
-![Version](https://img.shields.io/badge/version-v0.2.1-365f52)
+![Version](https://img.shields.io/badge/version-v0.2.2-365f52)
 ![Status](https://img.shields.io/badge/status-prototype-8a5d23)
 
 一個以「減少醫師輸入」為核心的家庭醫療介面原型。病人、家屬或家庭照護者可以先用熟悉的語言描述狀況，醫師接手時查看整理後的病人故事、缺漏資訊與待確認事項。
@@ -14,9 +14,11 @@
 
 ## 目前版本
 
-**v0.2.1**
+**v0.2.2**
 
-- 在介面中顯示版本號
+- 在介面與診前填寫頁顯示版本號
+- 診前填寫頁顯示獨立版本號與示範警語
+- 桌機版左側主選單可收合與展開
 - 個人識別資訊與健康資料預設遮蔽
 - 提供「顯示個資／遮蔽個資」切換
 - 載入新示範或完成診前填寫時，自動恢復遮蔽

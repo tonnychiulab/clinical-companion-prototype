@@ -22,6 +22,7 @@
   --radius-lg: 18px;
   --topbar-height: 70px;
   --side-width: 244px;
+  --side-width-collapsed: 72px;
   --mobile-nav-height: 66px;
   --focus: 0 0 0 3px rgba(54, 95, 82, 0.22);
 }
@@ -238,8 +239,27 @@ svg {
   background: var(--surface);
   border-right: 1px solid var(--border);
   overflow-y: auto;
+  transition: width .2s ease, transform .2s ease;
 }
-.side-panel-inner { padding: 18px 14px 28px; }
+.side-panel-toolbar { display: flex; justify-content: flex-end; padding: 10px 10px 0; }
+.sidebar-collapse-button {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-weight: 700;
+}
+.sidebar-collapse-button:hover { background: var(--surface-muted); color: var(--text); }
+.sidebar-collapse-icon { transition: transform .2s ease; }
+.side-panel-inner { padding: 12px 14px 28px; }
 .mode-section h2,
 .side-card h2 { margin: 0 0 10px; font-size: .82rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; }
 .mode-nav { display: grid; gap: 6px; }
@@ -262,10 +282,24 @@ svg {
 .side-card .button + .button { margin-top: 8px; }
 .compact-card p { margin: 0; color: var(--text-muted); font-size: .9rem; }
 
+body.sidebar-collapsed .side-panel { width: var(--side-width-collapsed); }
+body.sidebar-collapsed .main-content { margin-left: var(--side-width-collapsed); }
+body.sidebar-collapsed .side-panel-toolbar { padding-inline: 10px; }
+body.sidebar-collapsed .sidebar-collapse-button { width: 50px; padding-inline: 8px; }
+body.sidebar-collapsed .sidebar-collapse-button span,
+body.sidebar-collapsed .mode-section h2,
+body.sidebar-collapsed .mode-button span,
+body.sidebar-collapsed .side-card { display: none; }
+body.sidebar-collapsed .sidebar-collapse-icon { transform: rotate(180deg); }
+body.sidebar-collapsed .side-panel-inner { padding-inline: 10px; }
+body.sidebar-collapsed .mode-button { justify-content: center; width: 50px; min-width: 50px; padding-inline: 8px; }
+body.sidebar-collapsed .mode-nav { justify-items: center; }
+
 .main-content {
   min-height: 100vh;
   padding-top: var(--topbar-height);
   margin-left: var(--side-width);
+  transition: margin-left .2s ease;
 }
 
 .welcome-view { min-height: calc(100vh - var(--topbar-height)); display: grid; place-items: center; padding: 40px; }
@@ -448,6 +482,9 @@ svg {
 .intake-shell { width: min(860px, 100%); margin: 0 auto; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow); overflow: hidden; }
 .intake-header { justify-content: space-between; gap: 18px; padding: 22px 24px; border-bottom: 1px solid var(--border); }
 .intake-header h2 { margin: 0; font-size: 1.3rem; }
+.intake-title-meta { display: flex; align-items: center; gap: 9px; margin-bottom: 4px; }
+.intake-title-meta .eyebrow { margin: 0; }
+.intake-version-badge { white-space: nowrap; }
 .intake-progress { height: 5px; background: #e6e8e3; }
 .intake-progress span { display: block; width: 25%; height: 100%; background: var(--primary); transition: width .25s ease; }
 #intakeForm { padding: 28px 24px 22px; }
@@ -510,6 +547,14 @@ svg {
 
 @media (max-width: 1180px) {
   :root { --side-width: 0px; }
+  body.sidebar-collapsed .side-panel { width: 280px; }
+  body.sidebar-collapsed .main-content { margin-left: 0; }
+  body.sidebar-collapsed .mode-section h2,
+  body.sidebar-collapsed .mode-button span,
+  body.sidebar-collapsed .side-card { display: block; }
+  body.sidebar-collapsed .mode-button { justify-content: flex-start; width: 100%; padding-inline: 12px; }
+  body.sidebar-collapsed .mode-nav { justify-items: stretch; }
+  .side-panel-toolbar { display: none; }
   .menu-button { display: inline-grid; }
   .side-panel { transform: translateX(-100%); width: 280px; box-shadow: var(--shadow); transition: transform .2s ease; }
   .side-panel.is-open { transform: translateX(0); }

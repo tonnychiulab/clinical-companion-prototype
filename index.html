@@ -6,7 +6,7 @@
   <meta name="color-scheme" content="light">
   <meta name="theme-color" content="#365f52">
   <meta name="description" content="診前同行：家庭醫師診前整理、跨語言接手與偏鄉協作介面原型。">
-  <meta name="application-version" content="0.2.1">
+  <meta name="application-version" content="0.2.2">
   <title>診前同行｜Clinical Companion</title>
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -23,7 +23,7 @@
           <p class="eyebrow" data-i18n="brandEyebrow">家庭醫療協作</p>
           <div class="brand-title-row">
             <h1 data-i18n="brandName">診前同行</h1>
-            <span class="version-badge" id="appVersion" aria-label="版本 v0.2.1">v0.2.1</span>
+            <span class="version-badge" id="appVersion" aria-label="版本 v0.2.2">v0.2.2</span>
           </div>
         </div>
       </div>
@@ -63,6 +63,12 @@
     </header>
 
     <aside class="side-panel" id="sidePanel" aria-label="功能導覽">
+      <div class="side-panel-toolbar">
+        <button class="sidebar-collapse-button" id="collapseSidebarButton" type="button" aria-expanded="true" aria-controls="sidePanel">
+          <svg class="sidebar-collapse-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg>
+          <span data-i18n="collapseSidebar">收合主選單</span>
+        </button>
+      </div>
       <div class="side-panel-inner">
         <section class="mode-section" aria-labelledby="modeHeading">
           <h2 id="modeHeading" data-i18n="mode">模式</h2>
@@ -305,7 +311,10 @@
         <div class="intake-shell">
           <header class="intake-header">
             <div>
-              <p class="eyebrow" data-i18n="preVisitForm">診前填寫</p>
+              <div class="intake-title-meta">
+                <p class="eyebrow" data-i18n="preVisitForm">診前填寫</p>
+                <span class="version-badge intake-version-badge" id="intakeVersion" aria-label="版本 v0.2.2">v0.2.2</span>
+              </div>
               <h2 id="intakeTitle" data-i18n="tellUsInYourLanguage">用你熟悉的語言，把不舒服說清楚</h2>
             </div>
             <button class="button button-quiet" id="closeIntakeButton" type="button" data-i18n="backToDoctor">返回醫師工作台</button>
