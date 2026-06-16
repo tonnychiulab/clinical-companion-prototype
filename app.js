@@ -1,6 +1,6 @@
 "use strict";
 
-const APP_VERSION = "v0.2.0";
+const APP_VERSION = "v0.2.1";
 
 const translations = {
   "zh-TW": {
@@ -42,7 +42,7 @@ const translations = {
     english: "英文", traditionalChinese: "正體中文", notMeasured: "尚未測量", noKnownAllergy: "無已知過敏",
     none: "無", pendingVerification: "待核對", completenessHint: "仍有重要資料需要醫師確認。", organizedJustNow: "剛剛完成整理",
     addQuestion: "加入", markedDone: "已確認", copySuccess: "摘要已複製。", exportSuccess: "已產生交接文字檔。",
-    confirmedSuccess: "摘要已標記為醫師確認。", demoLoaded: "已載入跨語言照護示範。", resetSuccess: "已重置示範。",
+    confirmedSuccess: "摘要已標記為醫師確認。", demoLoaded: "已載入跨語言照護示範，個資已預設遮蔽。", resetSuccess: "已重置示範。",
     speechUnsupported: "此瀏覽器不支援語音辨識，可改用文字輸入。", listening: "正在聆聽，請開始說話…",
     speechStopped: "語音已停止，請確認辨識內容。", speechError: "語音辨識無法使用，請改用文字輸入。",
     noteAdded: "紀錄已加入。", selectRequired: "請先選擇一個項目。", complaintRequired: "請選擇或輸入主要不適。",
@@ -117,7 +117,7 @@ const translations = {
     english: "English", traditionalChinese: "Traditional Chinese", notMeasured: "Not measured", noKnownAllergy: "No known allergy",
     none: "None", pendingVerification: "Needs verification", completenessHint: "Important information still needs clinician confirmation.",
     organizedJustNow: "Organized just now", addQuestion: "Add", markedDone: "Confirmed", copySuccess: "Summary copied.",
-    exportSuccess: "Handoff text file created.", confirmedSuccess: "Summary marked as clinician-confirmed.", demoLoaded: "Multilingual caregiver demo loaded.",
+    exportSuccess: "Handoff text file created.", confirmedSuccess: "Summary marked as clinician-confirmed.", demoLoaded: "Multilingual caregiver demo loaded with personal data hidden by default.",
     resetSuccess: "Demo reset.", speechUnsupported: "Speech recognition is not available in this browser. Please type instead.",
     listening: "Listening. Please start speaking…", speechStopped: "Speech stopped. Please review the text.", speechError: "Speech recognition is unavailable. Please type instead.",
     noteAdded: "Note added.", selectRequired: "Please select an option first.", complaintRequired: "Please select or enter the main concern.",
@@ -401,10 +401,14 @@ function getDemoPatient(type = "caregiver") {
 }
 
 function loadDemo(type = "caregiver") {
+  // Every demo load starts in privacy mode, even when the previous case was revealed.
+  // This is especially important for the multilingual caregiver scenario because
+  // the original utterance, translated summary, speaker and caregiver identity
+  // can all contain identifiable health information.
+  state.privacyMasked = true;
   state.patient = getDemoPatient(type);
   state.mode = type === "rural" ? "rural" : type === "education" ? "education" : "clinical";
   state.reviewStatus = "pending";
-  state.privacyMasked = true;
   state.lastOrganized = Date.now();
   setView("workspace");
   renderAll();
