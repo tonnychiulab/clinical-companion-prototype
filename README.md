@@ -4,7 +4,7 @@
 
 ## 線上示範
 
-[開啟 GitHub Pages 線上示範](https://YOUR_GITHUB_USERNAME.github.io/clinical-companion-prototype/)
+[開啟 GitHub Pages 線上示範](https://tonnychiulab.github.io/clinical-companion-prototype/)
 
 > 部署後，請將網址中的 `YOUR_GITHUB_USERNAME` 替換成你的 GitHub 帳號；如果 Repository 名稱不同，也請一併修改網址末段。
 
